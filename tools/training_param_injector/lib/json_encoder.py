@@ -1,18 +1,18 @@
 '''
-Convert TrainInfo to Json object
+Convert TrainInfo to Json formatted string
 '''
 
-from json import JSONEncoder
+from json import JSONEncoder, dumps
 from copy import deepcopy
 
-from . import train_info as tinfo
+from . import traininfo as tinfo
 
-class JEcoder(JSONEncoder):
+class JEncoder(JSONEncoder):
     '''convert TrainingInfo into json format'''
     def ecnode_opt(self, opt):
         ret = {}
         ret["type"] = str(opt)
-        ret["args"] = copy.deepcopy(vars(opt))
+        ret["args"] = deepcopy(vars(opt))
         return ret
 
     def __encode_loss(self, loss):
@@ -28,3 +28,7 @@ class JEcoder(JSONEncoder):
         ret["loss"] = self.__encode_loss(obj.loss)
         ret["batch_size"] = obj.batch_size
         return ret
+
+def encode(tinfo : tinfo.TrainingInfo) -> str:
+    tinfo_str = dumps(tinfo, indent=4, cls=JEncoder)
+    return tinfo_str 
