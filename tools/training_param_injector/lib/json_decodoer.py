@@ -4,6 +4,7 @@ Convert json formatted string into TrainInfo
 from json import loads
 from . import traininfo as tinfo
 
+'''
 def decode_optimizer(opt_obj: dict) -> tinfo.Optimizer:
     opt_type = opt_obj["type"]
     opt_args = opt_obj["args"]
@@ -14,7 +15,6 @@ def decode_optimizer(opt_obj: dict) -> tinfo.Optimizer:
         return tinfo.Adam(**opt_args)
     else:
         raise ValueError(f"not supported optmizer.type={opt_type}")
-
 
 def decode_loss_rdt(s: str) -> tinfo.LossReduction:
     if (s.lower() in ["sumoverbatchsize", "sum_over_batch_size"]):
@@ -51,3 +51,4 @@ def decode(json_str: str) -> tinfo.TrainingInfo:
     batch_size = json_obj["batch_size"]
 
     return tinfo.TrainingInfo(optimizer, loss, batch_size)
+'''

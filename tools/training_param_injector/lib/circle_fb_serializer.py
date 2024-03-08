@@ -1,28 +1,24 @@
 import flatbuffers
 import logging
 
-from circle_schema import circle_schema_generated as circle
+from circle_schema.circle_schema_generated import *
 
-class CircleFB:
+class CircleFBSerializer:
     '''
-    This class worked based on object API - to rewrite(mutate) flatbuffer
+    Circle FlatBuffer Serializer
     '''
     def __init__(self, circle_file: str):
         with open(circle_file, 'rb') as f:
-            circle_obj = circle.Model.GetRootAs(f.read(), 0)
-            self.circle_model = circle.ModelT.InitFromObj(circle_obj)
+            circle_obj = Model.GetRootAs(f.read(), 0)
+            self.circle_model = ModelT.InitFromObj(circle_obj)
 
     def inject_metadata(self, meta_name, meta_buf):
-        """Populates the metadata buffer (in bytearray) into the model file.
-        Inserts metadata_buf into the metadata field of schema.Model. If the
-        MetadataPopulator object is created using the method,
-        with_model_file(model_file), the model file will be updated.
-        Existing metadata buffer (if applied) will be overridden by the new metadata
-        buffer.
-        """
-
+        '''Populates the metadata buffer (in bytearray) into the model file.
+        Inserts meta_buf into the metadata field of Model.
+        If meta_name already existed in metadata, it will be overwritten by the given buffer.
+        '''
         # Prepare buffer_obj
-        buffer_obj = circle.BufferT()
+        buffer_obj = BufferT()
         buffer_obj.data = meta_buf
 
         is_populated = False
@@ -40,7 +36,7 @@ class CircleFB:
                 self.circle_model.buffers = []
             self.circle_model.buffers.append(buffer_obj)
             # Creates a new metadata field.
-            metadata_obj = circle.MetadataT()
+            metadata_obj = MetadataT()
             metadata_obj.name = meta_name
             metadata_obj.buffer = len(self.circle_model.buffers) - 1
             self.circle_model.metadata.append(metadata_obj)

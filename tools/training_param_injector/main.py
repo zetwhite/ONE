@@ -1,9 +1,8 @@
 import argparse
 import logging
 
-from lib.circle_builder import CircleBuilder
-from lib.traininfo_builder import TinfoBuilder
-
+from lib.circle_builder import CircleSOBuilder
+from lib.traininfo_builder import TinfoSOBuilder
 from lib.json_decodoer import decode as decode_from_json
 from lib.json_encoder import encode as encode_to_json
 
@@ -48,8 +47,13 @@ if __name__ == "__main__":
     logging.debug(encode_to_json(train_info))
     
     tinfo_name = TINFO_META_NAME
-    tinfo_buff = TinfoBuilder(train_info).get_buff()
+    tinfo_buff = TinfoSOBuilder(train_info).get_buff()
 
-    circle_builder = CircleBuilder(args.input_circle_file)
+    circle_builder = CircleSOBuilder(args.input_circle_file)
     circle_builder.inject_metadata(tinfo_name, tinfo_buff)
     circle_builder.export(args.output_circle_file)
+
+    if check : 
+        buf = circle_builder.get_metadata(TINFO_META_NAME)
+        train_info = TinfoDeserializer(buf)
+        print(encode_to_json(train_info))
