@@ -1,0 +1,7 @@
+# ifndef __ONERT_BACKEND_TRAIN_KERNEL_TENSOR_ALLOCATOR_H__
+# define __ONERT_BACKEND_TRAIN_KERNEL_TENSOR_ALLOCATOR_H__
+
+#include "ir/train/TrainableOperationVisitor.h"
+
+
+#endif __ONERT_BACKEND_TRAIN_KERNEL_TENSOR_ALLOCATOR_H__

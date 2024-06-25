@@ -68,6 +68,8 @@ private:
   std::unique_ptr<MemoryManager> _back_prop_mgr;
   std::unique_ptr<MemoryManager> _gradient_mgr;
   std::unique_ptr<DisposableMemoryManager> _disposable_back_prop_mgr;
+  // TODO : If possible, remove '_kernel_mgr' and distrubte tensors in _kernel_mgr into other *_mgr
+  std::unique_ptr<MemoryManager> _kernel_mgr;
   const std::shared_ptr<TensorRegistry> _tensors;
 };
 
