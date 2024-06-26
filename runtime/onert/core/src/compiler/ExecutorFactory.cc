@@ -869,6 +869,10 @@ exec::IExecutor *ExecutorFactory::createTrainableExecutor(
     }
   }
 
+
+  // Allocate Extra Tensor which is needed for Kernels
+
+
   if (order.size() != code_map.size())
   {
     throw std::runtime_error("ExecutorFactory: Some kernels are not generated");

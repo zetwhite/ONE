@@ -47,6 +47,14 @@ public:
 using TrainableTensor = basic::train::TrainableTensor;
 using BackPropTensor = Tensor;
 using GradientTensor = Tensor;
+using ExtraTensor = Tensor;
+// ExtraTensor : Tensor used only inside specific layer, this tensor is not shared/accesed with another layer.
+
+// class ExtraTensor
+// {
+//   ir::OperandInfo info;
+//   Tensor* tensor;
+// };
 
 } // namespace train
 } // namespace backend

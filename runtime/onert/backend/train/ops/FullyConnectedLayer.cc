@@ -104,6 +104,10 @@ void FullyConnectedLayer::configureBackward(
   }
 }
 
+void FullyConnetedLayer::extraTensroInfo(){
+
+}
+
 void FullyConnectedLayer::forward(bool) { cpu::ops::FullyConnectedLayer::run(); }
 
 void FullyConnectedLayer::backward()

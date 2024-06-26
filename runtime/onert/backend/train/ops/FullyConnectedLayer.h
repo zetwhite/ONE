@@ -46,6 +46,8 @@ public:
                          const IPortableTensor *back_prop_output, ir::Activation activation,
                          ir::FullyConnectedWeightsFormat weights_format);
 
+  void extraTensorInfo();
+  
   void forward(bool training) override;
   void backward() override;
 
@@ -59,10 +61,10 @@ private:
   const IPortableTensor *_back_prop_output;
 
   // TODO Optimize memory
-  std::unique_ptr<Tensor> _transposed_weights;
-  std::unique_ptr<Tensor> _transposed_input;
-  std::unique_ptr<Tensor> _transposed_back_prop_output;
-  std::unique_ptr<Tensor> _act_back_prop_output;
+  ExtraTensor* _transposed_weights;
+  ExtraTensor* _transposed_input;
+  ExtraTensor* _transposed_back_prop_output;
+  ExtraTensor* _act_back_prop_output;
 };
 
 } // namespace ops
