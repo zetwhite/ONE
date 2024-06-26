@@ -63,6 +63,7 @@ public:
 private:
   // Disposable Tensors to be accumulated to BackPropTensor
   std::unordered_map<DisposableTensorIndex, std::unique_ptr<BackPropTensor>> _disposable_back_prop;
+  // std::unordered_map<
 };
 
 } // namespace train

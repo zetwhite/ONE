@@ -871,6 +871,10 @@ exec::IExecutor *ExecutorFactory::createTrainableExecutor(
 
 
   // Allocate Extra Tensor which is needed for Kernels
+  for (auto& code : code_map)
+  {
+
+  }
 
 
   if (order.size() != code_map.size())

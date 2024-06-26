@@ -70,6 +70,7 @@ public:
 public:
   backend::ITensorRegistry *genTensors() override;
   backend::train::ITensorRegistry *genTrainingTensors() override;
+  void genExtraTensors();
 
 public:
   FunctionMap genKernels() override;

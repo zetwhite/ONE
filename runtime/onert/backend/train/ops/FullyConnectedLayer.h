@@ -19,6 +19,7 @@
 
 #include "../ExternalContext.h"
 #include "../Tensor.h"
+#include "../ExtraTensorAllocator.h"
 
 #include <exec/train/ITrainableFunction.h>
 #include <ops/FullyConnectedLayer.h>
@@ -46,7 +47,7 @@ public:
                          const IPortableTensor *back_prop_output, ir::Activation activation,
                          ir::FullyConnectedWeightsFormat weights_format);
 
-  void extraTensorInfo();
+  std::vector<ExtraTensorInfo> extraTensorInfo();
   
   void forward(bool training) override;
   void backward() override;

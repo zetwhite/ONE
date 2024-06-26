@@ -41,6 +41,20 @@ createTransposedTensor(const backend::IPortableTensor *origin_tensor)
   return std::make_unique<backend::train::Tensor>(transposed_info, origin_tensor->layout());
 }
 
+std::unique_ptr<backend::train::Tensor>
+transposeOperandInfo(const ir::OperandInfo *origin_info)
+{
+  const auto &origin_shape = origin_info->shape();
+  assert(origin_shape.rank() == 2);
+
+  auto transposed_info = origin_tensor->get_info();
+  auto transposed_shape = ir::Shape{origin_shape.dim(1), origin_shape.dim(0)};
+  transposed_info.shape(transposed_shape);
+
+  return transposed_info;
+}
+
+
 } // namespace
 
 namespace onert
@@ -104,8 +118,32 @@ void FullyConnectedLayer::configureBackward(
   }
 }
 
-void FullyConnetedLayer::extraTensroInfo(){
+std::vector<ExtraTensorInfo> FullyConnectedLayer::extraTensorInfo(const IPortableTensor* weights, const IPortableTensor* inputs, const IPortableTensor* back_prop_output)
+{
+  std::vector<ExtraTensorInfo> ret;
 
+  TensorRequirements req;
+  {
+    req.operand_info = transposeOperandInfo(_weights->get_info());
+    req.layout = _weight->layout();
+  }
+  ret.emplace_back(req, &_transposed_weights);
+
+
+  return ret;
+}
+
+std::vector<ExtraTensorInfo> FullyConnetedLayer::extraTensorInfo()
+{
+  std::vector<ExtraTensorInfo> ret;
+
+  TensorRequirement req;
+  {
+    req.operand_info = transposeOperandInfo(_weights->get_info());
+    req.layout = _weight->layout();
+  }
+  ret.emplace_back(req, &_transposed_weights);
+  return ret;
 }
 
 void FullyConnectedLayer::forward(bool) { cpu::ops::FullyConnectedLayer::run(); }

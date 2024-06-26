@@ -18,7 +18,7 @@
 #define __ONERT_EXEC_TRAIN_I_TRAINABLE_FUNCTION_H__
 
 #include <cstdint>
-
+#include "backend/train/ExtraTensorAllocator.h"
 namespace onert
 {
 namespace exec
@@ -32,6 +32,7 @@ public:
   virtual ~ITrainableFunction() = default;
   virtual void forward(bool training) = 0;
   virtual void backward() = 0;
+  virtual std::vector<backend::train::ExtraTensorInfo> extraTensorInfos();
 };
 
 } // namespace train
