@@ -851,6 +851,11 @@ exec::IExecutor *ExecutorFactory::createTrainableExecutor(
                        }));
   }
 
+  // [idea1] : Generate Extra Tensors using visitor - by traversing operations
+  //
+  // While traversing operations, register and generate extra tensors based on *Layer requests
+  // While generating kernels, pass the extra tensors pointer to the kernel
+
   train::TrainableCodeMap code_map;
   // Generate kernels
   for (auto &&pair : ordered_contexts)
@@ -868,6 +873,16 @@ exec::IExecutor *ExecutorFactory::createTrainableExecutor(
         {op_ind, train::TrainableCodeAndInfo{op_ind, &op, lower_info, std::move(tn_seq)}});
     }
   }
+
+  // [idea2] : Generate Extra Tensors by traversing code_map
+
+  // Problem 1 :
+  // Since code_map lost its' backend backend,
+  // it is hard to register tensor into specific backend_backend.tensor_registry()
+
+  // Problme 2:
+  // Since ITrainableFunction is in train backend,
+  // It is not possible to use member function of *Layer here.
 
   if (order.size() != code_map.size())
   {

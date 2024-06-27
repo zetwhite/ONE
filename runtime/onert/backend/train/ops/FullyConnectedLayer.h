@@ -18,6 +18,7 @@
 #define __ONERT_BACKEND_TRAIN_OPS_FULLYCONNECTEDLAYER_H__
 
 #include "../ExternalContext.h"
+#include "../ExtraTensorAllocator.h"
 #include "../Tensor.h"
 
 #include <exec/train/ITrainableFunction.h>
@@ -46,6 +47,14 @@ public:
                          const IPortableTensor *back_prop_output, ir::Activation activation,
                          ir::FullyConnectedWeightsFormat weights_format);
 
+  // ExtraTensorRequests requestExtraTensors();
+  // void configureExtraTensors(std::vector<ExtraTensor*> extra_tensors) override;
+
+  static ExtraTensorRequests requestExtraTensors(const IPortableTensor *weights,
+                                                 const IPortableTensor *input);
+  static uint32_t countExtraTensors() { return 2; }
+  void configureExtraTensors(std::vector<ExtraTensor *> extra_tensors);
+
   void forward(bool training) override;
   void backward() override;
 
@@ -58,9 +67,8 @@ private:
   IPortableTensor *_back_prop_input;
   const IPortableTensor *_back_prop_output;
 
-  // TODO Optimize memory
-  std::unique_ptr<Tensor> _transposed_weights;
-  std::unique_ptr<Tensor> _transposed_input;
+  Tensor *_transposed_weights;
+  Tensor *_transposed_input;
   std::unique_ptr<Tensor> _transposed_back_prop_output;
   std::unique_ptr<Tensor> _act_back_prop_output;
 };

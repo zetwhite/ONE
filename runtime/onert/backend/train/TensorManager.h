@@ -61,6 +61,8 @@ public:
   void releaseGradientPlan(const ir::OperandIndex &ind);
   void claimDisposableBackPropPlan(const DisposableTensorIndex &ind);
   void releaseDisposableBackPropPlan(const DisposableTensorIndex &ind);
+  void claimExtraPlan(const ExtraTensorIndex &ind);
+  void releaseExtraPlan(const ExtraTensorIndex &ind);
 
 private:
   std::unique_ptr<MemoryManager> _nonconst_mgr;
@@ -68,6 +70,8 @@ private:
   std::unique_ptr<MemoryManager> _back_prop_mgr;
   std::unique_ptr<MemoryManager> _gradient_mgr;
   std::unique_ptr<DisposableMemoryManager> _disposable_back_prop_mgr;
+  // TODO : remove _extra_mgr and distribute tensors into another 'mgr's.
+  std::unique_ptr<ExtraMemoryManager> _extra_mgr;
   const std::shared_ptr<TensorRegistry> _tensors;
 };
 
