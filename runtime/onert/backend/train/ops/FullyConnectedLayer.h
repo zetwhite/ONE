@@ -18,7 +18,7 @@
 #define __ONERT_BACKEND_TRAIN_OPS_FULLYCONNECTEDLAYER_H__
 
 #include "../ExternalContext.h"
-#include "../ExtraTensorAllocator.h"
+#include "../ExtraTensorRequest.h"
 #include "../Tensor.h"
 
 #include <exec/train/ITrainableFunction.h>

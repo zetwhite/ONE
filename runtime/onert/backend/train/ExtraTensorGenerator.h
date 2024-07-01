@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef __ONERT_BACKEND_EXTRA_TENSOR_ALLOCATOR_H__
-#define __ONERT_BACKEND_EXTRA_TENSOR_ALLOCATOR_H__
+#ifndef __ONERT_BACKEND_EXTRA_TENSOR_GENERATOR_H__
+#define __ONERT_BACKEND_EXTRA_TENSOR_GENERATOR_H__
 
 // to construct vsitior
 #include "ir/train/TrainableOperationVisitor.h"
 #include "ir/train/Operations.Include.h"
 
 // ...
+#include "ExtraTensorRequest.h"
 #include "ir/train/TrainableGraph.h"
 #include "ir/train/ITrainableOperation.h"
 #include "ir/Index.h"
@@ -34,45 +35,16 @@ namespace backend
 namespace train
 {
 
-using ExtraTensor = Tensor;
-
-enum class ExtraTensorLifeTime
-{
-  // TODO: find better way to explain lifetime
-  DYNAMIC, // << exist during forward() or backward()
-  STATIC,  // << always exists
-};
-
-struct ExtraTensorRequest
-{
-  ir::OperandInfo info;
-  ir::Layout layout;
-  ExtraTensorLifeTime lifetime;
-};
-
-using ExtraTensorRequests = std::vector<ExtraTensorRequest>;
-
-class ExtraTensorAllocator : public ir::train::TrainableOperationVisitor
+class ExtraTensorGenerator : public ir::train::TrainableOperationVisitor
 {
 public:
-  ExtraTensorAllocator() = delete;
-  ExtraTensorAllocator(const ir::train::TrainableGraph &tgraph,
+  ExtraTensorGenerator() = delete;
+  ExtraTensorGenerator(const ir::train::TrainableGraph &tgraph,
                        std::shared_ptr<TensorBuilder> &tensor_builder,
-                       std::shared_ptr<ITensorRegistry> &tensor_registry)
-    : _tgraph(tgraph), _tensor_builder(tensor_builder)
-  {
-    _tensor_reg = std::dynamic_pointer_cast<TensorRegistry>(tensor_registry);
-
-    for (const auto &index : _tgraph.topolSortOperations())
-    {
-      const auto &node = _tgraph.operation(index);
-      _node_to_idx[&node] = index;
-    }
-  };
+                       std::shared_ptr<ITensorRegistry> &tensor_registry);
 
 public:
   void visit(const ir::train::operation::FullyConnected &node) override;
-
   // void visit(const train::operation::BinaryArithmetic &node) override;
   // void visit(const train::operation::Conv2D &node) override;
   // void visit(const train::operation::DepthwiseConv2D &node) override;
@@ -98,4 +70,4 @@ private:
 } // namespace backend
 } // namespace onert
 
-#endif // __ONERT_BACKEND_EXTRA_TENSOR_ALLOCATOR_H__
+#endif // __ONERT_BACKEND_EXTRA_TENSOR_GENERATOR_H__

@@ -186,6 +186,7 @@ void TensorBuilder::allocateBackward(void)
   _tensor_mgr->allocateBackPropTensors();
   _tensor_mgr->allocateGradientTensors();
   _tensor_mgr->allocateDisposableBackPropTensors();
+  _tensor_mgr->allocateExtraTensors();
 }
 
 } // namespace train

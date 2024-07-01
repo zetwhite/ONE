@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "ExtraTensorAllocator.h"
+#include "ExtraTensorGenerator.h"
 
 #include "ops/BackPropAccumulator.h"
 #include "ops/BinaryArithmeticLayer.h"
@@ -38,7 +38,21 @@ namespace backend
 namespace train
 {
 
-void ExtraTensorAllocator::handle_requests(const ir::OperationIndex &op_idx,
+ExtraTensorGenerator::ExtraTensorGenerator(const ir::train::TrainableGraph &tgraph,
+                                           std::shared_ptr<TensorBuilder> &tensor_builder,
+                                           std::shared_ptr<ITensorRegistry> &tensor_registry)
+  : _tgraph(tgraph), _tensor_builder(tensor_builder)
+{
+  _tensor_reg = std::dynamic_pointer_cast<TensorRegistry>(tensor_registry);
+
+  for (const auto &index : _tgraph.topolSortOperations())
+  {
+    const auto &node = _tgraph.operation(index);
+    _node_to_idx[&node] = index;
+  }
+};
+
+void ExtraTensorGenerator::handle_requests(const ir::OperationIndex &op_idx,
                                            const ExtraTensorRequests &requests)
 {
   // use 'auto i' induced to 'integer' -> this causes comparsion error.
@@ -63,7 +77,7 @@ void ExtraTensorAllocator::handle_requests(const ir::OperationIndex &op_idx,
   return;
 }
 
-void ExtraTensorAllocator::visit(const ir::train::operation::FullyConnected &node)
+void ExtraTensorGenerator::visit(const ir::train::operation::FullyConnected &node)
 {
   using ir::train::operation::FullyConnected;
 
