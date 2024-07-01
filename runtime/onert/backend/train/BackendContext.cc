@@ -18,6 +18,7 @@
 
 #include "TensorBuilder.h"
 #include "KernelGenerator.h"
+#include "ExtraTensorAllocator.h"
 #include "ops/BackPropInitializer.h"
 
 #include <backend/basic/train/TrainableBackendContextHelpers.h>
@@ -149,6 +150,13 @@ backend::train::ITensorRegistry *BackendContext::genTrainingTensors()
         disposable_index, createBackwardTensorInfo(operand), ir::Layout::NHWC);
     }
   }
+
+  // allocate extra tensors
+  ExtraTensorAllocator extra_tensor_generator(tgraph, _tensor_builder, _tensor_registry);
+  tgraph.operations().iterate([&](const ir::OperationIndex &, const ir::IOperation &op) {
+    const auto trainable_op = dynamic_cast<const ir::train::TrainableOperation *>(&op);
+    trainable_op->accept(extra_tensor_generator);
+  });
 
   planDisposableBackPropTensors();
 

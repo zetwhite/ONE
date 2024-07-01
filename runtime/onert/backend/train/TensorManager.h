@@ -49,6 +49,7 @@ public:
   void allocateBackPropTensors();
   void allocateGradientTensors();
   void allocateDisposableBackPropTensors();
+  void allocateExtraTensors();
   // TODO Add member functions to deallocate tensors
 
   void claimNonConstPlan(const ir::OperandIndex &ind);

@@ -96,6 +96,11 @@ void TensorManager::allocateDisposableBackPropTensors()
                  std::string{"DISPOSABLE BACK_PROP TENSOR "});
 }
 
+void TensorManager::allocateExtraTensors()
+{
+  allocateMemory(_extra_mgr.get(), _tensors->extra_tensors(), std::string{"      EXTRA TENOSR "});
+}
+
 void TensorManager::claimNonConstPlan(const ir::OperandIndex &index)
 {
   auto tensor = _tensors->getNonConstTensor(index);

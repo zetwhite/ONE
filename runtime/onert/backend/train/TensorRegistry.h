@@ -81,6 +81,11 @@ public:
     _extra[index] = std::move(tensor);
   }
 
+  const std::unordered_map<ExtraTensorIndex, std::unique_ptr<ExtraTensor>> &extra_tensors()
+  {
+    return _extra;
+  }
+
 private:
   // Disposable Tensors to be accumulated to BackPropTensor
   std::unordered_map<DisposableTensorIndex, std::unique_ptr<BackPropTensor>> _disposable_back_prop;

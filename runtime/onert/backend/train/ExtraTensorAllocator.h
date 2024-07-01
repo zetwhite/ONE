@@ -57,10 +57,12 @@ class ExtraTensorAllocator : public ir::train::TrainableOperationVisitor
 public:
   ExtraTensorAllocator() = delete;
   ExtraTensorAllocator(const ir::train::TrainableGraph &tgraph,
-                       const std::shared_ptr<TensorBuilder> &tensor_builder,
-                       const std::shared_ptr<TensorRegistry> &tensor_reg)
-    : _tgraph(tgraph), _tensor_builder(tensor_builder), _tensor_reg(tensor_reg)
+                       std::shared_ptr<TensorBuilder> &tensor_builder,
+                       std::shared_ptr<ITensorRegistry> &tensor_registry)
+    : _tgraph(tgraph), _tensor_builder(tensor_builder)
   {
+    _tensor_reg = std::dynamic_pointer_cast<TensorRegistry>(tensor_registry);
+
     for (const auto &index : _tgraph.topolSortOperations())
     {
       const auto &node = _tgraph.operation(index);
