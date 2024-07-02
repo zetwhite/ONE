@@ -18,6 +18,7 @@
 #define __ONERT_BACKEND_EXTRA_TENSOR_REQUEST_H__
 
 #include "ir/OperandInfo.h"
+#include "backend/IPortableTensor.h"
 
 namespace onert
 {
@@ -35,6 +36,14 @@ enum class ExtraTensorLifeTime
 
 struct ExtraTensorRequest
 {
+  static ExtraTensorRequest createRequestLike(const IPortableTensor *origin)
+  {
+    ExtraTensorRequest r = {.info = origin->get_info(),
+                            .layout = origin->layout(),
+                            .lifetime = ExtraTensorLifeTime::DYNAMIC};
+    return r;
+  }
+
   ir::OperandInfo info;
   ir::Layout layout;
   ExtraTensorLifeTime lifetime;

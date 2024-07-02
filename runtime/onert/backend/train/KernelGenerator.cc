@@ -378,7 +378,7 @@ void KernelGenerator::visit(const ir::train::operation::FullyConnected &node)
                           weights_grad_tensor, bias_grad_tensor, out_back_prop_tensor, activation,
                           weights_format);
 
-    auto extra_tensors = getExtraTensors(node, fn->countExtraTensors());
+    auto extra_tensors = getExtraTensors(node);
     fn->configureExtraTensors(extra_tensors);
 
     // Generate GradientAppliers
@@ -629,18 +629,21 @@ IPortableTensor *KernelGenerator::getBackPropOut(const ir::OperandIndex &output_
   return _tensor_reg->getBackPropTensor(output_index);
 }
 
-std::vector<ExtraTensor *> KernelGenerator::getExtraTensors(const ir::Operation &node, int count)
+std::vector<ExtraTensor *> KernelGenerator::getExtraTensors(const ir::Operation &node)
 {
   const auto &op_index = _node_to_idx[&node];
 
   std::vector<ExtraTensor *> ret;
-  ret.reserve(count);
 
-  for (auto i = 0; i < count; i++)
+  uint32_t sub = 0;
+  auto tensor = _tensor_reg->getExtraTensor(ExtraTensorIndex(op_index, sub));
+  while (tensor != nullptr)
   {
-    auto tensor = _tensor_reg->getExtraTensor(ExtraTensorIndex(op_index, i));
     ret.push_back(tensor);
+    sub++;
+    tensor = _tensor_reg->getExtraTensor(ExtraTensorIndex(op_index, sub));
   }
+
   return ret;
 }
 

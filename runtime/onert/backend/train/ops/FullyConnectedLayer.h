@@ -47,12 +47,10 @@ public:
                          const IPortableTensor *back_prop_output, ir::Activation activation,
                          ir::FullyConnectedWeightsFormat weights_format);
 
-  // ExtraTensorRequests requestExtraTensors();
-  // void configureExtraTensors(std::vector<ExtraTensor*> extra_tensors) override;
-
   static ExtraTensorRequests requestExtraTensors(const IPortableTensor *weights,
-                                                 const IPortableTensor *input);
-  static uint32_t countExtraTensors() { return 2; }
+                                                 const IPortableTensor *input,
+                                                 const IPortableTensor *back_prop_output,
+                                                 ir::Activation activation);
   void configureExtraTensors(std::vector<ExtraTensor *> extra_tensors);
 
   void forward(bool training) override;
@@ -67,10 +65,10 @@ private:
   IPortableTensor *_back_prop_input;
   const IPortableTensor *_back_prop_output;
 
-  Tensor *_transposed_weights;
-  Tensor *_transposed_input;
-  std::unique_ptr<Tensor> _transposed_back_prop_output;
-  std::unique_ptr<Tensor> _act_back_prop_output;
+  ExtraTensor *_transposed_weights;
+  ExtraTensor *_transposed_input;
+  ExtraTensor *_transposed_back_prop_output;
+  ExtraTensor *_act_back_prop_output;
 };
 
 } // namespace ops

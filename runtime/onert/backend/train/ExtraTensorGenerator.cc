@@ -81,13 +81,17 @@ void ExtraTensorGenerator::visit(const ir::train::operation::FullyConnected &nod
 {
   using ir::train::operation::FullyConnected;
 
+  const auto out_index{node.getOutputs().at(0)};
   const auto in_index{node.getInputs().at(FullyConnected::Input::INPUT)};
   const auto weights_index{node.getInputs().at(FullyConnected::Input::WEIGHT)};
 
   auto in_tensor = _tensor_reg->getPortableTensor(in_index);
   auto weights_tensor = _tensor_reg->getTrainableTensor(weights_index);
+  auto out_back_prop_tensor = _tensor_reg->getBackPropTensor(out_index);
+  const auto activation = node.param().activation;
 
-  auto requests = ops::FullyConnectedLayer::requestExtraTensors(weights_tensor, in_tensor);
+  auto requests = ops::FullyConnectedLayer::requestExtraTensors(weights_tensor, in_tensor,
+                                                                out_back_prop_tensor, activation);
 
   auto op_idx = _node_to_idx[&node];
   handle_requests(op_idx, requests);
