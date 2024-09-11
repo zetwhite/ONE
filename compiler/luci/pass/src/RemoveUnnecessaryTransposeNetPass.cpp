@@ -24,78 +24,16 @@
 namespace
 {
 
-class TaggedShapeAnalyzer final
+struct Dim final
 {
-public:
-  /**
-   * @brief check 'Transpose-Reshape-Transpose' can be replaced by one 'Reshape'.
-   *
-   * @example
-   *  Let's explain how analyzer check Transpose-Reshape-Transpose pattern with an exact example.
-   *
-   *  Let's assume under pattern is given :
-   *
-   *      Input(1, 7, 7, 448)
-   *            |
-   *      Transpose(perm=(0, 3, 1, 2))
-   *            |
-   *      Resahape(shape=(1, 448, 49))
-   *            |
-   *      Transpose(perm=(0, 2, 1))
-   *            |
-   *      Output(1, 49, 448)
-   *
-   *  It simulates how each dimension of the tensor's shape are transformed/moved
-   *  using a member variable named '_shape'.
-   *  'tags' in _shape record the initial order of each dimension.
-   *
-   *   TIMELINE              |   _shape states :
-   *                         |
-   *   init_shape_with_tag   |    - value :   (1)   (7)   (7)   (448)
-   *                         |    - tags  :   (-)   (0)   (1)   (2)
-   *                         |
-   *   analyze_transpose     |    - value :   (1)   (448)  (7)  (7)
-   *                         |    - tags  :   (-)   (2)    (0)  (1)
-   *                         |
-   *   analyze_reshape       |    - value :   (1)   (448)   (49)
-   *                         |    - tags  :   (-)   (2)     (0, 1)
-   *                         |
-   *   anaylze_transpose     |    - value  :   (1)   (49)    (448)
-   *                         |    - tags   :   (-)   (0, 1)  (2)
-   *
-   *  After all simulation done, if tags are in same order as initial _shape,
-   *  Transpose has no effect in final shape, which they can be removed as
-   *  unnecessary Ops.
-   */
-  template <loco::DataType DType>
-  bool can_remove_transposes(const luci::CircleTranspose *f_tr, const luci::CircleReshape *m_rs,
-                             const luci::CircleTranspose *b_tr);
-
-private:
-  void init_shape_with_tag(const luci::CircleNode *);
-
-  template <loco::DataType PermType> void analyze_transpose(const luci::CircleTranspose *);
-
-  template <loco::DataType ShapeType> bool analyze_reshape(const luci::CircleReshape *);
-
-  bool verify_tag() const;
-
-  struct Dim final
-  {
-    int32_t value;
-    std::vector<uint8_t> tags;
-  };
-
-  const uint8_t START_TAG = 0;
-
-  using Shape = std::vector<Dim>;
-  Shape _shape;
-
-  int32_t flatsize(const Shape &shape) const;
-  bool inference_incomplete_shape(const Shape &src, Shape &dst);
+  int32_t value;
+  std::vector<uint8_t> tags;
 };
 
-int32_t TaggedShapeAnalyzer::flatsize(const Shape &shape) const
+/*
+using Shape = std::vector<Dim>;
+
+int32_t flatsize(const Shape &shape)
 {
   int32_t size = 1;
   for (const auto &dim : shape)
@@ -105,6 +43,56 @@ int32_t TaggedShapeAnalyzer::flatsize(const Shape &shape) const
   }
   return size;
 }
+*/
+
+class Shape final
+{
+public:
+  Shape() = default;
+  Shape(luci::CircleNode* tensor);
+  Shape(luci::CircleConst* constant);
+
+  int32_t flatsize();
+  void infer_unknown_shape(int32_t element_count);
+  void fill_incremental_tags(int8_t start_tag);
+  bool fill_tags(Shape& others);
+  bool is_incremental_tags(uint8_t start_tag);
+
+  Dim& operator[] (int idx) {
+    return _dims.at(idx);
+  }
+
+  Dim operator[] (int idx) const {
+    return _dims.at(idx);
+  }
+
+private: 
+  std::vector<Dim> _dims; 
+};
+
+Shape::Shape(luci::CircleNode* tensor)
+{
+  for(uint32_t i = 0; i < tensor->rank(); ++i)
+  {
+    Dim dim;
+    dim.value = tensor->dim(i).value();
+  
+    _dims.push_back(dim);
+  }
+}
+
+void Shape::fill_incremental_tags(int8_t start_tag)
+{
+  uin8_t tag = start_tag;
+  for(auto &dim : _dims)
+  {
+    if(_dims != 1)
+    {
+      _dims.push_back(tag++);
+    }
+  }
+}
+
 
 /**
  * @brief if 'dst' has -1 valued dim, replace -1 with inferenced value
@@ -112,7 +100,8 @@ int32_t TaggedShapeAnalyzer::flatsize(const Shape &shape) const
  * @return  ture, if successfully replace -1 value
  *          false, otherwise
  */
-bool TaggedShapeAnalyzer::inference_incomplete_shape(const Shape &src, Shape &dst)
+/*
+bool inference_incomplete_shape(const Shape &src, Shape &dst)
 {
   std::vector<size_t> incomplete_indexes;
   for (size_t i = 0; i < dst.size(); i++)
@@ -135,12 +124,33 @@ bool TaggedShapeAnalyzer::inference_incomplete_shape(const Shape &src, Shape &ds
 
   return true;
 }
+*/
+
+class TaggedShapeAnalyzer final
+{
+public:
+  template <loco::DataType DType>
+  bool can_remove_transposes(const luci::CircleTranspose *f_tr, const luci::CircleReshape *m_rs,
+                             const luci::CircleTranspose *b_tr);
+
+private:
+  //bool init_shape_with_tag(const luci::CircleTranspose* f_tr, const luci::CircleTranspose* b_tr);
+  void init_shape_with_tag(const luci::CircleNode* in_tensor);
+
+  template <loco::DataType PermType> void analyze_transpose(const luci::CircleTranspose *);
+
+  template <loco::DataType ShapeType> bool analyze_reshape(const luci::CircleReshape *);
+
+  bool verify_tag() const;
+
+  const uint8_t START_TAG = 0;
+  Shape _shape;
+};
 
 /**
  * @brief initalize _shape with input tensor named in_tensor
  *
  * @note 'tags' are attached to non-1 valued dimension.
- */
 void TaggedShapeAnalyzer::init_shape_with_tag(const luci::CircleNode *in_tensor)
 {
   _shape.clear();
@@ -148,7 +158,7 @@ void TaggedShapeAnalyzer::init_shape_with_tag(const luci::CircleNode *in_tensor)
 
   for (uint32_t i = 0; i < in_tensor->rank(); i++)
   {
-    TaggedShapeAnalyzer::Dim dim;
+    Dim dim;
     {
       dim.value = in_tensor->dim(i).value();
       if (dim.value != 1)
@@ -157,6 +167,44 @@ void TaggedShapeAnalyzer::init_shape_with_tag(const luci::CircleNode *in_tensor)
     _shape.push_back(dim);
   }
 }
+*/
+
+void TaggedShapeAnalyzer::init_shape_with_tag(const luci::CircleNode* in_tensor)
+{
+
+  _shape = Shape(in->a());
+  _shpae.fill_incremental_tags(START_TAG);
+
+  return true;
+  /*
+  auto in_node = dynamic_cast<luci::CircleNode*>(in->a());
+  auto out_node = out;
+
+  auto in_rank = in_node->rank();
+  auto out_rank = out_node->rank();
+
+  auto max_rank_node = (in_rank > out_rank) ? in_node : out_node; 
+
+  Shape max_rank_shape(max_rank_node);
+  max_rank_shape.fill_incremental_tags(START_TAG);
+
+  if(max_rank_node != in_node)
+  {
+    Shape start_shape(in_node);
+    if(not start_shape.fill_tags(max_rank_shape))
+      return false;
+
+    _shape = start_shape;
+  }
+  else
+  {
+    _shape = max_rank_shape;
+  }
+
+  return true;
+  */
+}
+
 
 /**
  * @brief update _shape based on 'Transpose' permutation value
@@ -179,15 +227,34 @@ void TaggedShapeAnalyzer::analyze_transpose(const luci::CircleTranspose *transpo
   const luci::CircleConst *perm_node = loco::must_cast<luci::CircleConst *>(transpose_node->perm());
   assert(perm_node->dtype() == PermType);
 
-  TaggedShapeAnalyzer::Shape new_shape;
+  Shape new_shape;
   const auto size = perm_node->size<PermType>();
   for (uint32_t i = 0; i < size; i++)
   {
     auto perm_idx = perm_node->at<PermType>(i);
-    new_shape.push_back(_shape.at(perm_idx));
+    new_shape.push_back(_shape[perm_idx]);
   }
   _shape = new_shape;
 }
+
+
+template <loco::DataType PermType>
+void TaggedShapeAnalyzer::analyze_transpose(__cpp_initializer_lists perm)
+{
+  /*
+  const luci::CircleConst *perm_node = loco::must_cast<luci::CircleConst *>(transpose_node->perm());
+  assert(perm_node->dtype() == PermType);
+  */
+  Shape new_shape;
+  const auto size = perm_node->size<PermType>();
+  for (uint32_t i = 0; i < size; i++)
+  {
+    auto perm_idx = perm_node->at<PermType>(i);
+    new_shape.push_back(_shape[perm_idx]);
+  }
+  _shape = new_shape;
+}
+
 
 /**
  * @brief update _shape based on 'Reshape' shape value
@@ -205,7 +272,7 @@ void TaggedShapeAnalyzer::analyze_transpose(const luci::CircleTranspose *transpo
  *              - tags  :   (-)   (2)    (0, 1)
  */
 template <loco::DataType ReshapeType>
-bool TaggedShapeAnalyzer::analyze_reshape(const luci::CircleReshape *reshape_node)
+bool TaggedShapeAnalyzer::analyze_reshape(const Shape new_shape)
 {
   const luci::CircleConst *shape_node = loco::must_cast<luci::CircleConst *>(reshape_node->shape());
   assert(shape_node->dtype() == ReshapeType);
@@ -215,20 +282,26 @@ bool TaggedShapeAnalyzer::analyze_reshape(const luci::CircleReshape *reshape_nod
     return false;
 
   // Create new_shape based on reshape_node/shape
-  Shape new_shape;
+  Shape new_shape(shape_node);
+  new_shape.infer_unknown_shape(_shape.flatsize());
+  /*
   for (uint32_t i = 0; i < shape_node->size<ReshapeType>(); i++)
   {
     TaggedShapeAnalyzer::Dim dim;
     dim.value = shape_node->at<ReshapeType>(i);
 
     new_shape.push_back(dim);
-  }
+  }*/
 
+  new_shape.fill_tags(_shape);
   // inference new_shape dim with -1 value
+  /*
   if (inference_incomplete_shape(_shape, new_shape) == false)
     return false;
+  */
 
   // indexing for _shape [old_shape_start_idx, old_shape_end_idx)
+  /*
   uint32_t old_shape_start_idx = 0;
   uint32_t old_shape_end_idx = 1;
   auto old_shape_product = _shape[old_shape_start_idx].value;
@@ -283,7 +356,7 @@ bool TaggedShapeAnalyzer::analyze_reshape(const luci::CircleReshape *reshape_nod
 
     new_shape_idx++;
     move_to_next_range();
-  }
+  }*/
   _shape = new_shape;
   return true;
 }
@@ -291,8 +364,13 @@ bool TaggedShapeAnalyzer::analyze_reshape(const luci::CircleReshape *reshape_nod
 bool TaggedShapeAnalyzer::verify_tag() const
 {
   // check whether tags in _shape are incremental
+  
+  return _shape.is_incremental_tags(START_TAG);
+  /*
   uint8_t tag = START_TAG;
-  for (const auto &dim : _shape)
+  f
+  
+  or (const auto &dim : _shape)
   {
     for (const auto &t : dim.tags)
     {
@@ -302,10 +380,49 @@ bool TaggedShapeAnalyzer::verify_tag() const
         return false;
     }
   }
-  return true;
+  return true;*/
 }
 
-// For implementation details, please refer the comment with declaration.
+/**
+ * @brief check 'Transpose-Reshape-Transpose' can be replaced by one 'Reshape'.
+ *
+ * @example
+ *  Let's explain how analyzer check Transpose-Reshape-Transpose pattern with an exact example.
+ *
+ *  Let's assume under pattern is given :
+ *
+ *      Input(1, 7, 7, 448)
+ *            |
+ *      Transpose(perm=(0, 3, 1, 2))
+ *            |
+ *      Resahape(shape=(1, 448, 49))
+ *            |
+ *      Transpose(perm=(0, 2, 1))
+ *            |
+ *      Output(1, 49, 448)
+ *
+ *  It simulates how each dimension of the tensor's shape are transformed/moved
+ *  using a member variable named '_shape'.
+ *  'tags' in _shape record the initial order of each dimension.
+ *
+ *   TIMELINE              |   _shape states :
+ *                         |
+ *   init_shape_with_tag   |    - value :   (1)   (7)   (7)   (448)
+ *                         |    - tags  :   (-)   (0)   (1)   (2)
+ *                         |
+ *   analyze_transpose     |    - value :   (1)   (448)  (7)  (7)
+ *                         |    - tags  :   (-)   (2)    (0)  (1)
+ *                         |
+ *   analyze_reshape       |    - value :   (1)   (448)   (49)
+ *                         |    - tags  :   (-)   (2)     (0, 1)
+ *                         |
+ *   anaylze_transpose     |    - value  :   (1)   (49)    (448)
+ *                         |    - tags   :   (-)   (0, 1)  (2)
+ *
+ *  After all simulation done, if tags are in same order as initial _shape,
+ *  Transpose has no effect in final shape, which they can be removed as
+ *  unnecessary Ops.
+ */
 template <loco::DataType DType>
 bool TaggedShapeAnalyzer::can_remove_transposes(const luci::CircleTranspose *f_tr,
                                                 const luci::CircleReshape *m_rs,
@@ -315,6 +432,29 @@ bool TaggedShapeAnalyzer::can_remove_transposes(const luci::CircleTranspose *f_t
   assert(loco::must_cast<luci::CircleConst *>(m_rs->shape())->dtype() == DType);
   assert(loco::must_cast<luci::CircleConst *>(b_tr->perm())->dtype() == DType);
 
+  if(in_tensor < out_tensor)
+  {
+    init_shape_with_tag(in_tensor);
+
+    analyze_transpose<DType>(f_tr);
+
+    if (not analyze_reshape<DType>(m_rs))
+      return false;
+
+    analyze_transpose<DType>(b_tr);
+  }
+  else
+  {
+    init_shape_with_tag(out_tensor);
+ 
+    analyze_transpose<DType>(f_tr);
+
+    if (not analyze_reshape<DType>(m_rs))
+      return false;
+
+    analyze_transpose<DType>(b_tr);
+  }
+  /*
   const luci::CircleNode *in_tensor = loco::must_cast<luci::CircleNode *>(f_tr->a());
 
   init_shape_with_tag(in_tensor);
@@ -325,6 +465,7 @@ bool TaggedShapeAnalyzer::can_remove_transposes(const luci::CircleTranspose *f_t
     return false;
 
   analyze_transpose<DType>(b_tr);
+  */
 
   if (not verify_tag())
     return false;
@@ -447,9 +588,9 @@ namespace luci
  * BEFORE
  *
  * Current pass only targets below cases:
- *  - in.rank() >= out.rank()
  *  - 'Reshape' used to reduce N dimension into one (e.g. A x B x C => A x BC)
- *
+ *      or
+ *  - 'Reshape' used to decompose single dimension into multiple dimensions (e.g. A x BC => A x BC)
  *
  *     [CircleNode]      [CircleConst]
  *    (in)               (perm)
